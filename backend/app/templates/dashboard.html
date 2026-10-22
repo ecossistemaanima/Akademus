@@ -242,10 +242,24 @@
     </a>
 
     <nav class="nav-links">
-      <a href="/profile" class="nav-link" style="color:#a5b4fc;">👤 Meu Perfil</a>
+      <a href="/" class="nav-link" style="color:#a5b4fc; font-weight:600;">🏠 Início</a>
+      <a href="/partners" class="nav-link">🤝 Parceiros</a>
       <a href="/universities" class="nav-link">🏫 Universidades</a>
-      <a href="/users" class="nav-link">👥 Usuários & Moderação</a>
       
+      <!-- Menu Dropdown para Gestão Administrativa -->
+      {% if user.is_admin %}
+      <div class="dropdown" style="position:relative; display:inline-block;">
+        <button style="background:none; border:none; color:var(--text-muted); font-size:0.9rem; font-weight:500; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:4px;">
+          ⚙️ Gestão <span style="font-size:0.7rem;">▼</span>
+        </button>
+        <div style="position:absolute; right:0; top:100%; margin-top:8px; background:#0f172a; border:1px solid var(--card-border); border-radius:12px; min-width:200px; box-shadow:0 10px 25px rgba(0,0,0,0.5); z-index:100; overflow:hidden;" class="dropdown-content">
+          <a href="/users" style="color:var(--text-muted); padding:10px 16px; text-decoration:none; display:flex; align-items:center; gap:8px; font-size:0.85rem;">👥 Usuários & Moderação</a>
+          <a href="/universities" style="color:var(--text-muted); padding:10px 16px; text-decoration:none; display:flex; align-items:center; gap:8px; font-size:0.85rem;">🏫 Gestão de Universidades</a>
+          <a href="/partners" style="color:var(--text-muted); padding:10px 16px; text-decoration:none; display:flex; align-items:center; gap:8px; font-size:0.85rem;">🤝 Gestão de Parceiros</a>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="user-profile">
         {% if user.picture %}
         <img src="{{ user.picture }}" alt="{{ user.name }}" class="user-avatar">
@@ -254,6 +268,7 @@
           <div style="font-size: 0.875rem; font-weight: 600;">{{ user.name }}</div>
           <div style="font-size: 0.75rem; color: var(--text-muted);">{{ user.email }}</div>
         </div>
+        <a href="/profile" style="color:#a5b4fc; text-decoration:none; font-size:0.85rem; margin-left:8px;">Perfil</a>
         <a href="/logout" class="btn-logout">Sair</a>
       </div>
     </nav>
@@ -296,15 +311,15 @@
         <div class="card-action">Ver Universidades &rarr;</div>
       </a>
 
-      <!-- Módulo Stout / Revolt -->
-      <div class="card" style="opacity: 0.85;">
-        <div class="card-icon icon-stout">💬</div>
-        <h2 class="card-title">Comunidade Stout / Revolt</h2>
+      <!-- Módulo de Parceiros Acadêmicos -->
+      <a href="/partners" class="card">
+        <div class="card-icon icon-stout" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">🤝</div>
+        <h2 class="card-title">Parceiros Acadêmicos</h2>
         <p class="card-desc">
-          Ambiente soberano de mensageria independente de big techs e governado pela <strong>JocastaBOT</strong>.
+          Programas de capacitação global: Google Cloud, Red Hat Academy, Cisco, AWS Academy, Skillable e CertiProf.
         </p>
-        <div class="card-action" style="color: #f472b6;">Pods K3s Configurados &rarr;</div>
-      </div>
+        <div class="card-action" style="color: #34d399;">Acessar Parceiros &rarr;</div>
+      </a>
     </section>
   </main>
 

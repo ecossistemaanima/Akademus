@@ -38,11 +38,13 @@ def create_app(test_config=None):
     from app.routes.auth import auth_bp, configure_oauth
     from app.routes.universities import universities_bp
     from app.routes.users import users_bp
+    from app.routes.partners import partners_bp
 
     configure_oauth(app)
     app.register_blueprint(auth_bp)
     app.register_blueprint(universities_bp)
     app.register_blueprint(users_bp)
+    app.register_blueprint(partners_bp)
 
     # Redirecionamento amigável para Meu Perfil
     @app.route("/profile", methods=["GET", "POST"])

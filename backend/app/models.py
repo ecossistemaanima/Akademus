@@ -124,6 +124,13 @@ class UserBadge(db.Model):
     user = db.relationship("User", backref=db.backref("user_badges", cascade="all, delete-orphan", lazy="joined"))
     badge = db.relationship("Badge", back_populates="user_badges", lazy="joined")
 
+    @property
+    def is_expired(self) -> bool:
+        """Indica se a badge já atingiu a data de validade/expiração."""
+        if not self.expires_at:
+            return False
+        return self.expires_at < datetime.utcnow().date()
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -133,7 +140,7 @@ class UserBadge(db.Model):
             "issued_at": self.issued_at.isoformat() if self.issued_at else None,
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
             "evidence_url": self.evidence_url,
-            "is_expired": self.expires_at is not None and self.expires_at < datetime.utcnow().date(),
+            "is_expired": self.is_expired,
         }
 
 

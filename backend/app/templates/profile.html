@@ -65,6 +65,38 @@
       </div>
     </div>
 
+    <!-- Seção de Insígnias Conquistadas pelo Usuário -->
+    <div style="background: rgba(15,23,42,0.6); padding: 1.5rem; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 2rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h3 style="font-family:'Outfit'; font-size:1.15rem; margin:0; color:#fbbf24;">🎖️ Minhas Insígnias Digitais ({{ user.user_badges|length }})</h3>
+        <a href="/badges" style="font-size:0.8rem; color:#38bdf8; text-decoration:none;">Explorar Catálogo &rarr;</a>
+      </div>
+
+      {% if user.user_badges %}
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px;">
+        {% for ub in user.user_badges %}
+        <div style="background: #020617; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; display:flex; flex-direction:column; align-items:center; text-align:center;">
+          <img src="{{ ub.badge.image_url or 'https://images.credly.com/images/8000dfb0-c651-4091-a275-c9ddc12643a7/google_cloud_skills_boost_innovators.png' }}" style="width:55px; height:55px; object-fit:contain; margin-bottom:8px;" alt="">
+          <div style="font-size:0.8rem; font-weight:600; line-height:1.2; margin-bottom:4px;">{{ ub.badge.name }}</div>
+          <div style="font-size:0.7rem; color:#38bdf8; margin-bottom:6px;">{{ ub.badge.partner.name if ub.badge.partner else ub.badge.issuer_name }}</div>
+          <div style="font-size:0.68rem; color:#94a3b8; margin-top:auto;">
+            Emissão: {{ ub.issued_at.strftime('%d/%m/%Y') }}
+          </div>
+          {% if ub.expires_at %}
+          <div style="font-size:0.68rem; color: #f59e0b; margin-top:2px;">
+            Expira: {{ ub.expires_at.strftime('%d/%m/%Y') }}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="font-size:0.85rem; color:#94a3b8; text-align:center; padding:1rem;">
+        Nenhuma insígnia conquistada ainda. Adicione sua <strong>URL do Credly</strong> abaixo para sincronizar automaticamente!
+      </div>
+      {% endif %}
+    </div>
+
     <form action="/profile" method="POST">
       <div class="form-group">
         <label class="form-label">Nome Completo</label>

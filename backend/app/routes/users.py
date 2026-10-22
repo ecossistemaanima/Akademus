@@ -27,15 +27,26 @@ def edit_my_profile():
         user.google_picture = request.form.get("google_picture") or None
         user_data["picture"] = user.google_picture
 
-        user.bio = (request.form.get("bio") or "").strip() or None
-        user.credly_url = (request.form.get("credly_url") or "").strip() or None
+        new_credly_url = (request.form.get("credly_url") or "").strip() or None
+        old_credly_url = user.credly_url
+        user.credly_url = new_credly_url
         user.linkedin_url = (request.form.get("linkedin_url") or "").strip() or None
         user.google_skills_boost_url = (request.form.get("google_skills_boost_url") or "").strip() or None
         user.is_profile_public = (request.form.get("is_profile_public") == "true")
 
+        # Dispara sincronização automática com Credly se informado
+        credly_msg = ""
+        if new_credly_url:
+            from app.services.credly_service import sync_user_credly_badges
+            sync_res = sync_user_credly_badges(user, new_credly_url)
+            if sync_res.get("status") == "success":
+                credly_msg = f" Foram sincronizadas {sync_res.get('imported', 0)} insígnias do Credly!"
+            else:
+                credly_msg = f" (Aviso Credly: {sync_res.get('message')})"
+
         db.session.commit()
         session["user"] = user_data
-        success_msg = "Perfil atualizado com sucesso!"
+        success_msg = f"Perfil atualizado com sucesso!{credly_msg}"
 
     return render_template("profile.html", user=user, success=success_msg)
 

@@ -74,6 +74,69 @@ class AcademicPartner(db.Model):
         }
 
 
+class Badge(db.Model):
+    """Catálogo de Badges / Insígnias Digitais de parceiros e capacitações."""
+    __tablename__ = "badges"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    code = db.Column(db.String(128), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    image_url = db.Column(db.String(512), nullable=True)
+    criteria_url = db.Column(db.String(512), nullable=True)
+    partner_id = db.Column(db.Integer, db.ForeignKey("academic_partners.id", ondelete="SET NULL"), nullable=True)
+    issuer_name = db.Column(db.String(128), nullable=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    partner = db.relationship("AcademicPartner", backref=db.backref("badges", lazy="dynamic"))
+    user_badges = db.relationship("UserBadge", back_populates="badge", cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "code": self.code,
+            "name": self.name,
+            "description": self.description,
+            "image_url": self.image_url,
+            "criteria_url": self.criteria_url,
+            "partner_id": self.partner_id,
+            "partner_name": self.partner.name if self.partner else self.issuer_name,
+            "issuer_name": self.issuer_name,
+            "is_active": self.is_active,
+        }
+
+
+class UserBadge(db.Model):
+    """Emissão de uma Badge para um Usuário com data de emissão e expiração."""
+    __tablename__ = "user_badges"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    badge_id = db.Column(db.Integer, db.ForeignKey("badges.id", ondelete="CASCADE"), nullable=False)
+    issued_at = db.Column(db.Date, nullable=False)
+    expires_at = db.Column(db.Date, nullable=True)
+    credly_badge_id = db.Column(db.String(128), nullable=True)
+    evidence_url = db.Column(db.String(512), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    user = db.relationship("User", backref=db.backref("user_badges", cascade="all, delete-orphan", lazy="joined"))
+    badge = db.relationship("Badge", back_populates="user_badges", lazy="joined")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "badge_id": self.badge_id,
+            "badge": self.badge.to_dict() if self.badge else None,
+            "issued_at": self.issued_at.isoformat() if self.issued_at else None,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "evidence_url": self.evidence_url,
+            "is_expired": self.expires_at is not None and self.expires_at < datetime.utcnow().date(),
+        }
+
+
 class Role(db.Model):
     """Papel / Perfil de acesso do usuário no sistema."""
     __tablename__ = "roles"

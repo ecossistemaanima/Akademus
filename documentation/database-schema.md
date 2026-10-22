@@ -12,6 +12,9 @@ erDiagram
     USERS ||--o{ USER_UNIVERSITIES : "pertence a"
     ROLES ||--o{ USER_ROLES : "atribuída a"
     USERS ||--o{ USER_ROLES : "possui"
+    ACADEMIC_PARTNERS ||--o{ BADGES : "emite"
+    USERS ||--o{ USER_BADGES : "conquista"
+    BADGES ||--o{ USER_BADGES : "atribuída a"
 
     UNIVERSITIES {
         int id PK
@@ -34,6 +37,31 @@ erDiagram
         boolean is_active "Status ativo/inativo (Soft Delete)"
         datetime created_at
         datetime updated_at
+    }
+
+    BADGES {
+        int id PK
+        varchar code UK "Slug único da badge (ex: AWS_CERTIFIED_CLOUD_PRACTITIONER)"
+        varchar name "Título da insígnia / certificação"
+        text description "Descrição das competências comprovadas"
+        varchar image_url "URL da imagem da badge (ex: Credly CDN)"
+        varchar criteria_url "URL dos critérios oficiais de emissão"
+        int partner_id FK "Vínculo opcional com ACADEMIC_PARTNERS"
+        varchar issuer_name "Nome da entidade emissora"
+        boolean is_active "Status ativo/inativo (Soft Delete)"
+        datetime created_at
+        datetime updated_at
+    }
+
+    USER_BADGES {
+        int id PK
+        int user_id FK "Vínculo com USERS"
+        int badge_id FK "Vínculo com BADGES"
+        date issued_at "Data obrigatória de emissão"
+        date expires_at "Data opcional de expiração / validade"
+        varchar credly_badge_id "ID único de rastreamento no Credly"
+        varchar evidence_url "URL pública de verificação"
+        datetime created_at
     }
 
     USERS {

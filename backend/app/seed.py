@@ -80,11 +80,51 @@ def seed_database(app):
             admin_user.universities = all_unis
             db.session.add(admin_user)
         else:
-            # Garante que possui as roles e todas as universidades
             if not admin_user.has_role("ADMINISTRADOR"):
                 admin_user.roles.append(roles_map["ADMINISTRADOR"])
             admin_user.universities = all_unis
             admin_user.status = "APPROVED"
 
+        # 5. Parceiros Acadêmicos Iniciais
+        from app.models import AcademicPartner, Badge
+        initial_partners = [
+            {"code": "GOOGLE_CLOUD", "name": "Google Cloud", "category": "CLOUD_AI"},
+            {"code": "RED_HAT", "name": "Red Hat", "category": "OPEN_SOURCE_LINUX"},
+            {"code": "CISCO", "name": "Cisco", "category": "NETWORKING_CYBER"},
+            {"code": "AWS", "name": "AWS", "category": "CLOUD_TECH"},
+            {"code": "SKILLABLE", "name": "Skillable", "category": "HANDS_ON_LABS"},
+            {"code": "CERTIPROF", "name": "Certiprof", "category": "PROFESSIONAL_CERTS"},
+        ]
+        partner_objs = {}
+        for p_data in initial_partners:
+            partner = AcademicPartner.query.filter_by(code=p_data["code"]).first()
+            if not partner:
+                partner = AcademicPartner(code=p_data["code"], name=p_data["name"], category=p_data["category"], is_active=True)
+                db.session.add(partner)
+                db.session.flush()
+            partner_objs[partner.code] = partner
+
+        # 6. Badges Iniciais no Catálogo (Credly Referência)
+        if not Badge.query.first():
+            b1 = Badge(
+                code="GOOGLE_GEMINI_APP",
+                name="Create Your First Gemini Enterprise Application",
+                description="Certifica habilidades práticas de desenvolvimento com o Gemini da Google Cloud.",
+                image_url="https://images.credly.com/images/3c923d13-42da-4765-995d-59f3030e042a/blob",
+                partner_id=partner_objs["GOOGLE_CLOUD"].id,
+                issuer_name="Google Cloud",
+                is_active=True
+            )
+            b2 = Badge(
+                code="RH_ACADEMY_EDUCATOR_2026",
+                name="2026 Red Hat Academy - Program Educator",
+                description="Instrutor credenciado para o programa acadêmico Red Hat Enterprise Linux.",
+                image_url="https://images.credly.com/images/6e8e3a18-2082-47ff-8c2e-1445c36ac0c6/blob",
+                partner_id=partner_objs["RED_HAT"].id,
+                issuer_name="Red Hat",
+                is_active=True
+            )
+            db.session.add_all([b1, b2])
+
         db.session.commit()
-        print("✅ Banco inicializado com Universidades Ânima, Roles e Usuário Administrador Mestre!")
+        print("✅ Banco inicializado com Universidades Ânima, Roles, Parceiros e Badges!")

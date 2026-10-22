@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Akademus | Gestão de Badges & Insígnias</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.85);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --primary: #6366f1;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: #f8fafc; margin: 0; padding: 2rem; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 1200px; }
+    .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 1.5rem 2rem; backdrop-filter: blur(16px); margin-bottom: 2rem; }
+    h1 { font-family: 'Outfit'; font-size: 1.85rem; margin: 0; }
+    .nav-links { display: flex; gap: 15px; align-items: center; }
+    .nav-links a { color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: #fff; }
+    .btn { padding: 0.65rem 1.25rem; border-radius: 10px; font-weight: 600; border: none; cursor: pointer; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-accent { background: var(--accent); color: #082f49; }
+    .btn-accent:hover { background: #22d3ee; }
+    .btn-danger { background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); }
+    .btn-danger:hover { background: var(--danger); color: #fff; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 10px; margin-bottom: 1.5rem; }
+    .tab-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); color: #94a3b8; padding: 0.75rem 1.5rem; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 0.95rem; }
+    .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* Cards & Grids */
+    .section-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 1.75rem; backdrop-filter: blur(16px); }
+    .badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+    .badge-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; transition: transform 0.2s, border-color 0.2s; }
+    .badge-card:hover { transform: translateY(-3px); border-color: rgba(99, 102, 241, 0.4); }
+    .badge-icon { width: 90px; height: 90px; object-fit: contain; margin-bottom: 1rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)); }
+    .badge-name { font-weight: 700; font-size: 1rem; margin-bottom: 0.35rem; }
+    .badge-issuer { font-size: 0.8rem; color: #38bdf8; margin-bottom: 0.5rem; font-weight: 600; }
+    .badge-desc { font-size: 0.775rem; color: #94a3b8; line-height: 1.4; margin-bottom: 1rem; flex-grow: 1; }
+
+    /* Table for Assigned Badges */
+    .table-container { overflow-x: auto; margin-top: 1rem; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem; }
+    th { padding: 1rem; background: rgba(15, 23, 42, 0.8); color: #94a3b8; font-weight: 600; border-bottom: 1px solid var(--card-border); }
+    td { padding: 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); vertical-align: middle; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* Status Pill */
+    .status-pill { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .status-active { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-expired { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    /* Modal */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); justify-content: center; align-items: center; z-index: 1000; padding: 1rem; }
+    .modal-content { background: #0f172a; border: 1px solid var(--card-border); border-radius: 18px; width: 100%; max-width: 540px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
+    .form-group { margin-bottom: 1.15rem; }
+    .form-label { display: block; font-size: 0.825rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.4rem; }
+    .form-input, .form-select { width: 100%; padding: 0.75rem 1rem; background: #020617; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; box-sizing: border-box; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <h1>🏅 Gestão de Badges & Insígnias</h1>
+        <p style="color:#94a3b8; font-size:0.875rem; margin-top:4px;">Catálogo oficial de badges e atribuição curricular com emissão e validade</p>
+      </div>
+      <div class="nav-links">
+        <a href="/">🏠 Início</a>
+        <a href="/partners">🤝 Parceiros</a>
+        <a href="/users">👥 Usuários</a>
+        <a href="/profile">👤 Meu Perfil</a>
+        {% if is_admin %}
+        <button class="btn btn-accent" onclick="openAssignModal()">➕ Pendurar Badge em Usuário</button>
+        <button class="btn btn-primary" onclick="openCreateBadgeModal()">✨ Nova Badge</button>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Abas -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-btn-assigned" onclick="switchTab('assigned')">🎖️ Insígnias Penduradas ({{ user_badges|length }})</button>
+      <button class="tab-btn" id="tab-btn-catalog" onclick="switchTab('catalog')">📚 Catálogo de Badges ({{ badges|length }})</button>
+    </div>
+
+    <!-- Conteúdo da Aba: Atribuições a Usuários -->
+    <div class="section-card" id="tab-assigned">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h2 style="font-family:'Outfit'; font-size:1.35rem; margin:0;">Usuários com Insígnias Conquistadas</h2>
+        {% if is_admin %}
+        <span style="font-size:0.85rem; color:#94a3b8;">Gerencie a atribuição, datas de validade ou remova se necessário.</span>
+        {% endif %}
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Usuário</th>
+              <th>Badge</th>
+              <th>Emissor / Parceiro</th>
+              <th>Data Emissão</th>
+              <th>Data Expiração</th>
+              <th>Status</th>
+              {% if is_admin %}<th style="text-align:right;">Ações</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for ub in user_badges %}
+            <tr>
+              <td>
+                <div style="font-weight:600; color:#fff;">{{ ub.user.name }}</div>
+                <div style="font-size:0.775rem; color:#94a3b8;">{{ ub.user.email }}</div>
+              </td>
+              <td>
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <img src="{{ ub.badge.image_url or 'https://images.credly.com/images/8000dfb0-c651-4091-a275-c9ddc12643a7/google_cloud_skills_boost_innovators.png' }}" style="width:40px; height:40px; object-fit:contain;" alt="">
+                  <div>
+                    <div style="font-weight:600;">{{ ub.badge.name }}</div>
+                    {% if ub.evidence_url %}
+                    <a href="{{ ub.evidence_url }}" target="_blank" style="font-size:0.75rem; color:#38bdf8; text-decoration:none;">🔗 Ver Evidência</a>
+                    {% endif %}
+                  </div>
+                </div>
+              </td>
+              <td>{{ ub.badge.partner.name if ub.badge.partner else (ub.badge.issuer_name or 'N/A') }}</td>
+              <td>{{ ub.issued_at.strftime('%d/%m/%Y') if ub.issued_at else '-' }}</td>
+              <td>
+                {% if ub.expires_at %}
+                  {{ ub.expires_at.strftime('%d/%m/%Y') }}
+                {% else %}
+                  <span style="color:#94a3b8;">Não expira</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if ub.expires_at and ub.expires_at < today_date|default('2099-01-01') %}
+                <span class="status-pill status-expired">Expirada</span>
+                {% else %}
+                <span class="status-pill status-active">Válida</span>
+                {% endif %}
+              </td>
+              {% if is_admin %}
+              <td style="text-align:right;">
+                <button class="btn btn-danger" style="padding:4px 10px; font-size:0.75rem;" onclick="unassignBadge({{ ub.id }})">Desvincular</button>
+              </td>
+              {% endif %}
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" style="text-align:center; padding:2.5rem; color:#94a3b8;">
+                Nenhuma insígnia pendurada no momento.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Conteúdo da Aba: Catálogo de Badges -->
+    <div class="section-card" id="tab-catalog" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h2 style="font-family:'Outfit'; font-size:1.35rem; margin:0;">Catálogo de Badges Disponíveis</h2>
+          <p style="color:#94a3b8; font-size:0.85rem; margin-top:4px;">Insígnias reconhecidas institucionalmente pelos parceiros acadêmicos</p>
+        </div>
+      </div>
+
+      <div class="badges-grid">
+        {% for b in badges %}
+        <div class="badge-card">
+          <img src="{{ b.image_url or 'https://images.credly.com/images/8000dfb0-c651-4091-a275-c9ddc12643a7/google_cloud_skills_boost_innovators.png' }}" class="badge-icon" alt="{{ b.name }}">
+          <div class="badge-name">{{ b.name }}</div>
+          <div class="badge-issuer">{{ b.partner.name if b.partner else (b.issuer_name or 'Parceiro Akademus') }}</div>
+          <div class="badge-desc">{{ (b.description or 'Insígnia de capacitação profissional e acadêmica.')[:120] }}...</div>
+          {% if is_admin %}
+          <div style="display:flex; gap:8px; width:100%; margin-top:auto;">
+            <button class="btn btn-accent" style="flex:1; padding:6px; font-size:0.75rem; justify-content:center;" onclick="openAssignModalWithBadge({{ b.id }})">Pendurar</button>
+            <button class="btn btn-danger" style="padding:6px 10px; font-size:0.75rem;" onclick="deleteBadge({{ b.id }})">Desativar</button>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Pendurar Badge em Usuário -->
+  <div class="modal" id="modal-assign">
+    <div class="modal-content">
+      <h3 style="font-family:'Outfit'; font-size:1.3rem; margin-top:0; color:#38bdf8;">🎖️ Pendurar Badge no Usuário</h3>
+      <form id="form-assign" onsubmit="handleAssign(event)">
+        <div class="form-group">
+          <label class="form-label">Selecione o Usuário *</label>
+          <select name="user_id" id="assign-user" class="form-select" required>
+            <option value="">Selecione um usuário...</option>
+            {% for u in users %}
+            <option value="{{ u.id }}">{{ u.name }} ({{ u.email }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Selecione a Badge do Catálogo *</label>
+          <select name="badge_id" id="assign-badge" class="form-select" required>
+            <option value="">Selecione uma badge...</option>
+            {% for b in badges %}
+            <option value="{{ b.id }}">{{ b.name }} ({{ b.partner.name if b.partner else b.issuer_name }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Data de Emissão *</label>
+            <input type="date" name="issued_at" class="form-input" value="{{ today_date }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data de Expiração (Opcional)</label>
+            <input type="date" name="expires_at" class="form-input" placeholder="dd/mm/aaaa">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">URL da Evidência / Certificado (Opcional)</label>
+          <input type="url" name="evidence_url" class="form-input" placeholder="https://www.credly.com/badges/...">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:1.5rem;">
+          <button type="button" class="btn" style="background:#334155; color:#fff;" onclick="closeModal('modal-assign')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Confirmar Atribuição</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Criar Badge no Catálogo -->
+  <div class="modal" id="modal-create-badge">
+    <div class="modal-content">
+      <h3 style="font-family:'Outfit'; font-size:1.3rem; margin-top:0; color:#a5b4fc;">✨ Cadastrar Nova Badge no Catálogo</h3>
+      <form id="form-create-badge" onsubmit="handleCreateBadge(event)">
+        <div class="form-group">
+          <label class="form-label">Código Único (Slug) *</label>
+          <input type="text" name="code" class="form-input" placeholder="EX: AWS_CLOUD_PRACTITIONER" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nome da Badge *</label>
+          <input type="text" name="name" class="form-input" placeholder="EX: AWS Certified Cloud Practitioner" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Parceiro Acadêmico Emissor</label>
+          <select name="partner_id" class="form-select">
+            <option value="">Selecione o parceiro oficial (se houver)...</option>
+            {% for p in partners %}
+            <option value="{{ p.id }}">{{ p.name }} ({{ p.code }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nome do Emissor (Caso não cadastrado acima)</label>
+          <input type="text" name="issuer_name" class="form-input" placeholder="EX: Amazon Web Services Training">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">URL da Imagem / Ícone</label>
+          <input type="url" name="image_url" class="form-input" placeholder="https://images.credly.com/images/...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descrição</label>
+          <textarea name="description" class="form-input" rows="2" placeholder="Descreva os conhecimentos certificados por esta insígnia..."></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:1.5rem;">
+          <button type="button" class="btn" style="background:#334155; color:#fff;" onclick="closeModal('modal-create-badge')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar no Catálogo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      document.getElementById('tab-assigned').style.display = (tab === 'assigned') ? 'block' : 'none';
+      document.getElementById('tab-catalog').style.display = (tab === 'catalog') ? 'block' : 'none';
+      document.getElementById('tab-btn-assigned').className = 'tab-btn' + (tab === 'assigned' ? ' active' : '');
+      document.getElementById('tab-btn-catalog').className = 'tab-btn' + (tab === 'catalog' ? ' active' : '');
+    }
+
+    function openAssignModal() {
+      document.getElementById('modal-assign').style.display = 'flex';
+    }
+
+    function openAssignModalWithBadge(badgeId) {
+      document.getElementById('assign-badge').value = badgeId;
+      openAssignModal();
+    }
+
+    function openCreateBadgeModal() {
+      document.getElementById('modal-create-badge').style.display = 'flex';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    async function handleAssign(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = {
+        user_id: form.user_id.value,
+        badge_id: form.badge_id.value,
+        issued_at: form.issued_at.value,
+        expires_at: form.expires_at.value || null,
+        evidence_url: form.evidence_url.value || null
+      };
+
+      try {
+        const res = await fetch('/badges/api/assign', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data)
+        });
+        const resData = await res.json();
+        if (res.ok) {
+          alert(resData.message);
+          window.location.reload();
+        } else {
+          alert(resData.error || 'Erro ao atribuir badge.');
+        }
+      } catch (err) {
+        alert('Erro de comunicação com o servidor.');
+      }
+    }
+
+    async function handleCreateBadge(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = {
+        code: form.code.value,
+        name: form.name.value,
+        partner_id: form.partner_id.value || null,
+        issuer_name: form.issuer_name.value || null,
+        image_url: form.image_url.value || null,
+        description: form.description.value || null
+      };
+
+      try {
+        const res = await fetch('/badges/api', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data)
+        });
+        const resData = await res.json();
+        if (res.ok) {
+          alert(resData.message);
+          window.location.reload();
+        } else {
+          alert(resData.error || 'Erro ao criar badge.');
+        }
+      } catch (err) {
+        alert('Erro de comunicação.');
+      }
+    }
+
+    async function unassignBadge(id) {
+      if (!confirm('Deseja realmente desvincular esta badge do perfil do usuário?')) return;
+      try {
+        const res = await fetch(`/badges/api/unassign/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message);
+          window.location.reload();
+        } else {
+          alert(data.error || 'Erro ao desvincular badge.');
+        }
+      } catch (err) {
+        alert('Erro de comunicação.');
+      }
+    }
+
+    async function deleteBadge(id) {
+      if (!confirm('Deseja desativar esta badge do catálogo (exclusão lógica)?')) return;
+      try {
+        const res = await fetch(`/badges/api/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message);
+          window.location.reload();
+        } else {
+          alert(data.error || 'Erro ao desativar badge.');
+        }
+      } catch (err) {
+        alert('Erro de comunicação.');
+      }
+    }
+  </script>
+</body>
+</html>

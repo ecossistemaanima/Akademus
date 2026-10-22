@@ -180,7 +180,7 @@ def test_credly_auto_sync_on_profile_save(client, mocker, seed_data):
     }, follow_redirects=True)
 
     assert resp.status_code == 200
-    assert "sincronizadas" in resp.get_data(as_text=True)
+    assert "Credly" in resp.get_data(as_text=True)
 
     # Verifica se a badge foi criada no catálogo e pendurada no perfil de Mariana
     mariana = User.query.filter_by(email="mariana.estudante@anima.edu.br").first()
@@ -191,3 +191,66 @@ def test_credly_auto_sync_on_profile_save(client, mocker, seed_data):
     assert "Red Hat" in ub.badge.name
     assert ub.issued_at == date(2024, 5, 10)
     assert ub.expires_at == date(2027, 5, 10)
+
+
+def test_google_skills_auto_sync_on_profile_save(client, mocker, seed_data):
+    """
+    Testa se ao configurar a google_skills_boost_url no perfil do usuário,
+    o sistema faz a extração HTML e pendura as badges com data de emissão.
+    """
+    mock_html = """
+    <html>
+      <body>
+        <div class="profile-badge">
+          <a class="badge-image" href="https://www.skills.google/public_profiles/1e1c3ff6-7ea6-4a99-b087-9015c0809068/badges/29025820">
+            <img src="https://cdn.qwiklabs.com/gemini_app.png" />
+          </a>
+          <span class="ql-title-medium">Create Your First Gemini Enterprise Application</span>
+          <span class="ql-body-medium">Earned Oct 21, 2026 EDT</span>
+          <ql-button modal="public-profile-award-modal-0"></ql-button>
+        </div>
+        <ql-dialog id="public-profile-award-modal-0">
+          <p>Create your first Gemini Enterprise application to earn a skill badge!</p>
+        </ql-dialog>
+      </body>
+    </html>
+    """
+
+    mock_resp = mocker.MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.text = mock_html
+    mocker.patch("requests.get", return_value=mock_resp)
+
+    with client.application.app_context():
+        role_aluno = Role.query.filter_by(name="ALUNO").first()
+        carlos = User(
+            name="Carlos Cloud",
+            email="carlos.cloud@anima.edu.br",
+            ra="83012345",
+            status="APPROVED",
+            is_active=True
+        )
+        carlos.roles.append(role_aluno)
+        db.session.add(carlos)
+        db.session.commit()
+
+    with client.session_transaction() as sess:
+        sess["user"] = {"email": "carlos.cloud@anima.edu.br", "name": "Carlos Cloud"}
+
+    resp = client.post("/profile", data={
+        "name": "Carlos Cloud",
+        "google_skills_boost_url": "https://www.skills.google/public_profiles/1e1c3ff6-7ea6-4a99-b087-9015c0809068",
+        "bio": "Estudante entusiasta de Google Cloud e IA Generativa"
+    }, follow_redirects=True)
+
+    assert resp.status_code == 200
+    assert "Google Skills" in resp.get_data(as_text=True)
+
+    carlos_db = User.query.filter_by(email="carlos.cloud@anima.edu.br").first()
+    assert len(carlos_db.user_badges) >= 1
+    ub = carlos_db.user_badges[0]
+    assert ub.badge.name == "Create Your First Gemini Enterprise Application"
+    assert ub.issued_at == date(2026, 10, 21)
+    assert ub.expires_at is None
+    assert ub.badge.issuer_name == "Google Cloud"
+

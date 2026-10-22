@@ -28,25 +28,37 @@ def edit_my_profile():
         user_data["picture"] = user.google_picture
 
         new_credly_url = (request.form.get("credly_url") or "").strip() or None
-        old_credly_url = user.credly_url
         user.credly_url = new_credly_url
         user.linkedin_url = (request.form.get("linkedin_url") or "").strip() or None
-        user.google_skills_boost_url = (request.form.get("google_skills_boost_url") or "").strip() or None
+        
+        new_skills_url = (request.form.get("google_skills_boost_url") or "").strip() or None
+        user.google_skills_boost_url = new_skills_url
         user.is_profile_public = (request.form.get("is_profile_public") == "true")
 
         # Dispara sincronização automática com Credly se informado
-        credly_msg = ""
+        sync_messages = []
         if new_credly_url:
             from app.services.credly_service import sync_user_credly_badges
             sync_res = sync_user_credly_badges(user, new_credly_url)
             if sync_res.get("status") == "success":
-                credly_msg = f" Foram sincronizadas {sync_res.get('imported', 0)} insígnias do Credly!"
+                sync_messages.append(f"{sync_res.get('imported', 0)} insígnias do Credly")
             else:
-                credly_msg = f" (Aviso Credly: {sync_res.get('message')})"
+                sync_messages.append(f"Aviso Credly: {sync_res.get('message')}")
+
+        # Dispara sincronização automática com Google Skills Boost se informado
+        if new_skills_url:
+            from app.services.google_skills_service import sync_user_google_skills_badges
+            skills_res = sync_user_google_skills_badges(user, new_skills_url)
+            if skills_res.get("status") == "success":
+                sync_messages.append(f"{skills_res.get('imported', 0)} insígnias do Google Skills")
+            else:
+                sync_messages.append(f"Aviso Google Skills: {skills_res.get('message')}")
 
         db.session.commit()
         session["user"] = user_data
-        success_msg = f"Perfil atualizado com sucesso!{credly_msg}"
+        
+        sync_feedback = f" (Sincronizado: {', '.join(sync_messages)})" if sync_messages else ""
+        success_msg = f"Perfil atualizado com sucesso!{sync_feedback}"
 
     return render_template("profile.html", user=user, success=success_msg)
 

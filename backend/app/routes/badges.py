@@ -257,3 +257,22 @@ def sync_credly_manual(user_id):
 
     result = sync_user_credly_badges(user, credly_url)
     return jsonify(result), (200 if result.get("status") == "success" else 400)
+
+
+@badges_bp.route("/api/sync-google-skills/<int:user_id>", methods=["POST"])
+@admin_required
+def sync_google_skills_manual(user_id):
+    """Dispara a extração e sincronização manual do Google Skills Boost para um usuário específico."""
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "Usuário não encontrado."}), 404
+
+    from app.services.google_skills_service import sync_user_google_skills_badges
+    data = request.get_json() or {}
+    skills_url = data.get("google_skills_boost_url") or user.google_skills_boost_url
+
+    if not skills_url:
+        return jsonify({"error": "O usuário não possui uma URL do Google Skills Boost configurada."}), 400
+
+    result = sync_user_google_skills_badges(user, skills_url)
+    return jsonify(result), (200 if result.get("status") == "success" else 400)

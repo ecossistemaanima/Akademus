@@ -131,8 +131,9 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">☁️ Google Skills Boost URL (Public Profile)</label>
-        <input type="url" name="google_skills_boost_url" class="form-input" value="{{ user.google_skills_boost_url or '' }}" placeholder="https://www.cloudskillsboost.google/public_profiles/seu-id">
+        <label class="form-label">☁️ Google Skills Boost URL (Public Profile - Sincronização Automática)</label>
+        <input type="url" name="google_skills_boost_url" class="form-input" value="{{ user.google_skills_boost_url or '' }}" placeholder="https://www.skills.google/public_profiles/seu-id">
+        <span style="font-size:0.75rem; color:#94a3b8; display:block; margin-top:4px;">Suporta tanto <code>skills.google</code> quanto <code>cloudskillsboost.google</code>. As badges públicas serão extraídas e adicionadas ao seu perfil ao salvar.</span>
       </div>
 
       <!-- Privacidade das Redes -->

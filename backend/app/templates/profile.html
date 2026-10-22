@@ -50,8 +50,8 @@
     {% endif %}
 
     <div class="avatar-section">
-      <img src="{{ user.google_picture or 'https://ui-avatars.com/api/?name=' + user.name + '&background=6366f1&color=fff' }}" class="avatar-img" id="avatar-preview" alt="Avatar">
-      <div>
+      <img src="{{ user.avatar_url }}" class="avatar-img" id="avatar-preview" alt="Avatar">
+      <div style="flex-grow:1;">
         <div style="font-weight:700; font-size:1.1rem;">{{ user.name }}</div>
         <div style="font-size:0.85rem; color:#94a3b8;">{{ user.email }}</div>
         <div style="margin-top:6px;">
@@ -63,6 +63,11 @@
           {% endif %}
         </div>
       </div>
+      {% if user.avatar_data %}
+      <div>
+        <button type="button" onclick="removeAvatar()" style="background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); padding:6px 12px; border-radius:8px; font-size:0.75rem; cursor:pointer;">🗑️ Remover Foto</button>
+      </div>
+      {% endif %}
     </div>
 
     <!-- Seção de Insígnias Conquistadas pelo Usuário -->
@@ -97,7 +102,9 @@
       {% endif %}
     </div>
 
-    <form action="/profile" method="POST">
+    <form action="/profile" method="POST" enctype="multipart/form-data" id="profile-form">
+      <input type="hidden" name="remove_avatar" id="remove-avatar-input" value="false">
+
       <div class="form-group">
         <label class="form-label">Nome Completo</label>
         <input type="text" name="name" class="form-input" value="{{ user.name }}" required>
@@ -108,9 +115,11 @@
         <input type="email" class="form-input" value="{{ user.email }}" disabled>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">URL do Avatar / Foto de Perfil</label>
-        <input type="url" name="google_picture" id="input-avatar" class="form-input" value="{{ user.google_picture or '' }}" placeholder="https://exemplo.com/minha-foto.jpg">
+      <!-- Upload de Foto de Perfil / Avatar direto no Banco -->
+      <div class="form-group" style="background: rgba(99, 102, 241, 0.08); border: 1px dashed rgba(99, 102, 241, 0.35); border-radius: 12px; padding: 1.25rem;">
+        <label class="form-label" style="color: #a5b4fc; font-size: 0.9rem; margin-bottom: 0.25rem;">📸 Foto de Perfil (Armazenada no Banco de Dados)</label>
+        <p style="font-size: 0.775rem; color: #94a3b8; margin: 0 0 0.75rem 0;">Selecione uma imagem (.png, .jpg, .webp). O arquivo será gravado em binário no MariaDB.</p>
+        <input type="file" name="avatar_file" id="input-avatar-file" accept="image/png, image/jpeg, image/webp, image/gif" class="form-input" style="padding: 0.5rem; border: 1px solid rgba(255,255,255,0.15); cursor: pointer;">
       </div>
 
       <div class="form-group">
@@ -154,11 +163,34 @@
   </div>
 
   <script>
-    const avatarInput = document.getElementById('input-avatar');
+    const avatarFileInput = document.getElementById('input-avatar-file');
     const avatarPreview = document.getElementById('avatar-preview');
-    avatarInput.addEventListener('input', () => {
-      if (avatarInput.value.trim()) avatarPreview.src = avatarInput.value.trim();
-    });
+    const removeAvatarInput = document.getElementById('remove-avatar-input');
+
+    if (avatarFileInput) {
+      avatarFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          if (file.size > 5 * 1024 * 1024) {
+            alert('A imagem selecionada excede o limite máximo permitido de 5MB.');
+            avatarFileInput.value = '';
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            avatarPreview.src = evt.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+
+    function removeAvatar() {
+      if (confirm('Deseja remover sua foto personalizada e retornar para a foto padrão?')) {
+        removeAvatarInput.value = 'true';
+        document.getElementById('profile-form').submit();
+      }
+    }
   </script>
 </body>
 </html>

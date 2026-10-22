@@ -8,9 +8,20 @@ from app.routes.universities import admin_required
 users_bp = Blueprint("users", __name__, url_prefix="/users")
 
 
+@users_bp.route("/<int:user_id>/avatar", methods=["GET"])
+def get_user_avatar(user_id):
+    """Serve a imagem do avatar armazenada em binário (MEDIUMBLOB) diretamente do banco."""
+    user = db.session.get(User, user_id)
+    if not user or not user.avatar_data:
+        from flask import abort
+        abort(404)
+    from flask import Response
+    return Response(user.avatar_data, mimetype=user.avatar_mime_type or "image/png")
+
+
 @users_bp.route("/profile", methods=["GET", "POST"])
 def edit_my_profile():
-    """Tela de edição do próprio perfil pelo usuário autenticado."""
+    """Tela de edição do próprio perfil pelo usuário autenticado com suporte a upload de avatar."""
     user_data = session.get("user")
     if not user_data:
         return redirect(url_for("auth.login"))
@@ -24,8 +35,26 @@ def edit_my_profile():
             user.name = name
             user_data["name"] = name
 
-        user.google_picture = request.form.get("google_picture") or None
-        user_data["picture"] = user.google_picture
+        # 1. Upload de Arquivo de Imagem de Avatar (armazena diretamente no banco)
+        avatar_file = request.files.get("avatar_file")
+        if avatar_file and avatar_file.filename:
+            allowed_extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+            import os
+            _, ext = os.path.splitext(avatar_file.filename.lower())
+            if ext in allowed_extensions:
+                file_bytes = avatar_file.read()
+                # Limite de segurança: 5MB
+                if len(file_bytes) <= 5 * 1024 * 1024:
+                    user.avatar_data = file_bytes
+                    user.avatar_mime_type = avatar_file.mimetype or f"image/{ext.replace('.', '')}"
+                    user_data["picture"] = user.avatar_url
+            avatar_file.seek(0)
+        
+        # Opção de remover avatar customizado e voltar ao Google/Default
+        if request.form.get("remove_avatar") == "true":
+            user.avatar_data = None
+            user.avatar_mime_type = None
+            user_data["picture"] = user.google_picture
 
         new_credly_url = (request.form.get("credly_url") or "").strip() or None
         user.credly_url = new_credly_url

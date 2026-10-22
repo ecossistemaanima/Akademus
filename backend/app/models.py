@@ -168,6 +168,21 @@ class User(db.Model):
     google_id = db.Column(db.String(128), unique=True, nullable=True, index=True)
     google_picture = db.Column(db.String(512), nullable=True)
 
+    # Avatar armazenado diretamente no banco (Upload em MEDIUMBLOB)
+    avatar_data = db.Column(db.LargeBinary(length=16777215), nullable=True)
+    avatar_mime_type = db.Column(db.String(64), nullable=True)
+
+    @property
+    def avatar_url(self) -> str:
+        """Retorna a URL do avatar servida pelo backend se houver BLOB ou fallback para Google/UI-Avatars."""
+        if self.avatar_data:
+            return f"/users/{self.id}/avatar"
+        if self.google_picture:
+            return self.google_picture
+        import urllib.parse
+        encoded_name = urllib.parse.quote(self.name or "User")
+        return f"https://ui-avatars.com/api/?name={encoded_name}&background=6366f1&color=fff"
+
     # Perfis Profissionais e Acadêmicos (Badges, Skills, Redes)
     credly_url = db.Column(db.String(512), nullable=True)
     linkedin_url = db.Column(db.String(512), nullable=True)
@@ -231,7 +246,9 @@ class User(db.Model):
             "ra": self.ra,
             "status": self.status,
             "is_active": self.is_active,
+            "avatar_url": self.avatar_url,
             "google_picture": self.google_picture,
+            "has_custom_avatar": bool(self.avatar_data),
             "bio": self.bio,
             "credly_url": self.credly_url if show_details else None,
             "linkedin_url": self.linkedin_url if show_details else None,

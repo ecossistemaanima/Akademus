@@ -97,3 +97,45 @@ def test_privacy_visibility_control(app):
         dict_para_prof = aluno_privado.to_dict(viewer=prof)
         assert dict_para_prof["credly_url"] == "https://www.credly.com/users/discreto/badges"
         assert dict_para_prof["linkedin_url"] == "https://www.linkedin.com/in/discreto"
+
+
+def test_avatar_upload_and_blob_storage(client, seed_data):
+    """Testa o envio de arquivo de imagem (upload) armazenado diretamente no banco (MEDIUMBLOB)."""
+    import io
+
+    with client.session_transaction() as sess:
+        sess["user"] = {"email": "hpoyatos@gmail.com", "name": "Prof. Henrique Poyatos"}
+
+    # Cria bytes simulados de uma imagem PNG
+    fake_png_data = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4"
+    data = {
+        "name": "Prof. Henrique Poyatos",
+        "avatar_file": (io.BytesIO(fake_png_data), "minha_foto.png")
+    }
+
+    resp = client.post("/profile", data=data, content_type="multipart/form-data", follow_redirects=True)
+    assert resp.status_code == 200
+
+    with client.application.app_context():
+        user = User.query.filter_by(email="hpoyatos@gmail.com").first()
+        assert user.avatar_data == fake_png_data
+        assert user.avatar_mime_type in ["image/png", "image/x-png"]
+        assert user.avatar_url == f"/users/{user.id}/avatar"
+
+        user_id = user.id
+
+    # Testa endpoint GET /users/<id>/avatar servindo a imagem diretamente do banco
+    avatar_resp = client.get(f"/users/{user_id}/avatar")
+    assert avatar_resp.status_code == 200
+    assert avatar_resp.data == fake_png_data
+    assert "image/png" in avatar_resp.content_type
+
+    # Testa remoção do avatar
+    remove_resp = client.post("/profile", data={"remove_avatar": "true"}, follow_redirects=True)
+    assert remove_resp.status_code == 200
+
+    with client.application.app_context():
+        user = User.query.filter_by(email="hpoyatos@gmail.com").first()
+        assert user.avatar_data is None
+        assert user.avatar_mime_type is None
+

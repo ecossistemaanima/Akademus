@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Akademus | Painel Acadêmico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #080c14;
+      --card-bg: rgba(18, 24, 38, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #6366f1;
+      --accent: #06b6d4;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navbar */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2.5rem;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-link:hover { color: #fff; }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-left: 1.5rem;
+      border-left: 1px solid var(--card-border);
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      object-fit: cover;
+    }
+
+    .btn-logout {
+      color: #f87171;
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      transition: all 0.2s;
+    }
+
+    .btn-logout:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem;
+      width: 100%;
+    }
+
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 20px;
+      padding: 2.5rem;
+      margin-bottom: 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.25rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+
+    .hero-desc {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 600px;
+      line-height: 1.5;
+    }
+
+    /* Grid de Módulos */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 1.75rem;
+      transition: all 0.25s ease;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(99, 102, 241, 0.4);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(99, 102, 241, 0.1);
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .icon-users { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
+    .icon-unis { background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); }
+    .icon-stout { background: rgba(236, 72, 153, 0.15); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.3); }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-desc {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 1.25rem;
+      flex-grow: 1;
+    }
+
+    .card-action {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* Badges */
+    .badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-admin { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); }
+    .badge-unis { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <a href="/" class="nav-brand">
+      <div class="brand-icon">🎓</div>
+      <div class="brand-name">Akademus</div>
+    </a>
+
+    <nav class="nav-links">
+      <a href="/profile" class="nav-link" style="color:#a5b4fc;">👤 Meu Perfil</a>
+      <a href="/universities" class="nav-link">🏫 Universidades</a>
+      <a href="/users" class="nav-link">👥 Usuários & Moderação</a>
+      
+      <div class="user-profile">
+        {% if user.picture %}
+        <img src="{{ user.picture }}" alt="{{ user.name }}" class="user-avatar">
+        {% endif %}
+        <div>
+          <div style="font-size: 0.875rem; font-weight: 600;">{{ user.name }}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">{{ user.email }}</div>
+        </div>
+        <a href="/logout" class="btn-logout">Sair</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="container">
+    <section class="hero-banner">
+      <div>
+        <div style="display: flex; gap: 8px; margin-bottom: 0.75rem;">
+          <span class="badge badge-admin">ADMINISTRADOR</span>
+          <span class="badge badge-unis">{{ user_db.universities|length if user_db else 18 }} Universidades Ânima Vinculadas</span>
+        </div>
+        <h1 class="hero-title">Olá, {{ user.name }}!</h1>
+        <p class="hero-desc">
+          Ambiente complementar de apoio à docência universitária e avaliações contínuas. Você está autenticado no cluster de desenvolvimento local (Gentoo k3s).
+        </p>
+      </div>
+    </section>
+
+    <!-- Módulos de Acesso Rápido -->
+    <section class="modules-grid">
+      <!-- Módulo de Usuários -->
+      <a href="/users" class="card">
+        <div class="card-icon icon-users">👥</div>
+        <h2 class="card-title">Gestão de Usuários</h2>
+        <p class="card-desc">
+          Aprove novos pré-cadastros de estudantes e docentes, configure registros de aluno (RA) e gerencie papéis de acesso.
+        </p>
+        <div class="card-action">Acessar Moderação &rarr;</div>
+      </a>
+
+      <!-- Módulo de Universidades -->
+      <a href="/universities" class="card">
+        <div class="card-icon icon-unis">🏫</div>
+        <h2 class="card-title">Universidades do Ecossistema</h2>
+        <p class="card-desc">
+          Consulte e gerencie as 18 instituições cadastradas da Ânima Educação (São Judas, Anhembi Morumbi, UniBH, etc).
+        </p>
+        <div class="card-action">Ver Universidades &rarr;</div>
+      </a>
+
+      <!-- Módulo Stout / Revolt -->
+      <div class="card" style="opacity: 0.85;">
+        <div class="card-icon icon-stout">💬</div>
+        <h2 class="card-title">Comunidade Stout / Revolt</h2>
+        <p class="card-desc">
+          Ambiente soberano de mensageria independente de big techs e governado pela <strong>JocastaBOT</strong>.
+        </p>
+        <div class="card-action" style="color: #f472b6;">Pods K3s Configurados &rarr;</div>
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

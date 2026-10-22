@@ -1,0 +1,173 @@
+"""Modelos relacionais do banco de dados do Akademus."""
+
+from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from app.extensions import db
+
+# Tabela Associativa: Usuários <-> Universidades (N:N)
+user_universities = db.Table(
+    "user_universities",
+    db.Column("user_id", db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("university_id", db.Integer, db.ForeignKey("universities.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("created_at", db.DateTime, default=datetime.utcnow, nullable=False),
+)
+
+# Tabela Associativa: Usuários <-> Roles (N:N)
+user_roles = db.Table(
+    "user_roles",
+    db.Column("user_id", db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("role_id", db.Integer, db.ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("created_at", db.DateTime, default=datetime.utcnow, nullable=False),
+)
+
+
+class University(db.Model):
+    """Entidade que representa uma Universidade ou Faculdade."""
+    __tablename__ = "universities"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    code = db.Column(db.String(32), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(255), nullable=False)
+    short_name = db.Column(db.String(64), nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relacionamento com Usuários
+    users = db.relationship("User", secondary=user_universities, back_populates="universities")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "code": self.code,
+            "name": self.name,
+            "short_name": self.short_name,
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class AcademicPartner(db.Model):
+    """Entidade que representa um Parceiro Acadêmico (Google Cloud, Red Hat, Cisco, AWS, etc)."""
+    __tablename__ = "academic_partners"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    code = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(255), nullable=False)
+    category = db.Column(db.String(64), default="CLOUD_TECH", nullable=False)
+    website_url = db.Column(db.String(512), nullable=True)
+    logo_url = db.Column(db.String(512), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "code": self.code,
+            "name": self.name,
+            "category": self.category,
+            "website_url": self.website_url,
+            "description": self.description,
+            "is_active": self.is_active,
+        }
+
+
+class Role(db.Model):
+    """Papel / Perfil de acesso do usuário no sistema."""
+    __tablename__ = "roles"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(32), unique=True, nullable=False, index=True)
+    description = db.Column(db.String(255), nullable=True)
+
+    users = db.relationship("User", secondary=user_roles, back_populates="roles")
+
+
+class User(db.Model):
+    """Entidade que representa um Usuário (Estudante, Professor, Admin, Parceiro)."""
+    __tablename__ = "users"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(128), nullable=False)
+    email = db.Column(db.String(128), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=True)
+
+    # Campos de autenticação Google OAuth
+    google_id = db.Column(db.String(128), unique=True, nullable=True, index=True)
+    google_picture = db.Column(db.String(512), nullable=True)
+
+    # Perfis Profissionais e Acadêmicos (Badges, Skills, Redes)
+    credly_url = db.Column(db.String(512), nullable=True)
+    linkedin_url = db.Column(db.String(512), nullable=True)
+    google_skills_boost_url = db.Column(db.String(512), nullable=True)
+    bio = db.Column(db.Text, nullable=True)
+
+    # Controle de Visibilidade: Outros usuários só veem os links profissionais se is_profile_public for True
+    # Professores e Administradores sempre podem ver
+    is_profile_public = db.Column(db.Boolean, default=False, nullable=False)
+
+    # Registro Acadêmico de Aluno (Obrigatório para alunos, nulo para professores/admins)
+    ra = db.Column(db.String(64), nullable=True, index=True)
+
+    # Status de Moderação de Cadastro: PENDING, APPROVED, REJECTED
+    status = db.Column(db.String(16), default="PENDING", nullable=False, index=True)
+
+    # Exclusão Lógica (Soft Delete)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relacionamentos
+    universities = db.relationship("University", secondary=user_universities, back_populates="users")
+    roles = db.relationship("Role", secondary=user_roles, back_populates="users")
+
+    def set_password(self, password: str):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        if not self.password_hash:
+            return False
+        return check_password_hash(self.password_hash, password)
+
+    def has_role(self, role_name: str) -> bool:
+        return any(r.name == role_name for r in self.roles)
+
+    @property
+    def is_admin(self) -> bool:
+        return self.has_role("ADMINISTRADOR")
+
+    def to_dict(self, viewer=None):
+        """
+        Exporta dados do usuário para dicionário.
+        Se 'viewer' for passado, oculta URLs profissionais se o perfil for privado,
+        exceto se o viewer for o próprio usuário, Administrador ou Professor.
+        """
+        can_view_private = False
+        if viewer:
+            if viewer.id == self.id or viewer.is_admin or viewer.has_role("PROFESSOR"):
+                can_view_private = True
+        else:
+            can_view_private = self.is_profile_public
+
+        show_details = self.is_profile_public or can_view_private
+
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "ra": self.ra,
+            "status": self.status,
+            "is_active": self.is_active,
+            "google_picture": self.google_picture,
+            "bio": self.bio,
+            "credly_url": self.credly_url if show_details else None,
+            "linkedin_url": self.linkedin_url if show_details else None,
+            "google_skills_boost_url": self.google_skills_boost_url if show_details else None,
+            "is_profile_public": self.is_profile_public,
+            "roles": [r.name for r in self.roles],
+            "universities": [u.short_name for u in self.universities],
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }

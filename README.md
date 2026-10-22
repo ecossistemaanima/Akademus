@@ -38,11 +38,17 @@ Neste estágio inicial, a infraestrutura adota uma abordagem pragmática, modula
 
 | Componente | Descrição |
 | :--- | :--- |
-| **Host Físico / Servidor** | Ambiente local hospedado em **Debian Linux** mantido pelo Prof. Henrique Poyatos |
-| **Borda & DNS** | Gerenciamento de domínio, túneis e proteção de borda via **Cloudflare** |
-| **Orquestração** | Microsserviços e componentes distribuídos em pods **Kubernetes (k3s)** |
+| **Ambiente Dev (`development`)** | **Gentoo Linux** local (`localhost` k3s control-plane) com runner GitHub Actions |
+| **Ambiente Prod (`main`)** | **Debian Linux** (`lothlorien`) |
+| **Borda, Túneis & Domínio** | **Cloudflare** roteando `akademus.tux.me.uk` para o cluster local |
+| **Orquestração** | Pods e microsserviços em **Kubernetes (k3s)** (namespace `akademus` e `stoat`) |
+| **Backend & API** | **Python** com framework **Flask** (orientado a **TDD**) |
+| **Banco de Dados** | **MariaDB** com persistência em PVCs locais (`local-path`) |
+| **Gestão de Segredos** | **K3s Secrets** locais isolados (zero credenciais commitadas no Git) |
 | **Chat & Mensageria** | Instância dedicada de Revolt / Stout |
 | **Automação & Moderação** | JocastaBOT |
+
+Para mais detalhes da arquitetura e especificações técnicas, consulte a pasta [documentation/](file:///home/hpoyatos/CodeProjects/Akademus/documentation/index.md).
 
 ---
 

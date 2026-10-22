@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: akademus-api
+  namespace: akademus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: akademus-api
+  template:
+    metadata:
+      labels:
+        app: akademus-api
+    spec:
+      containers:
+        - name: api
+          image: akademus-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: FLASK_ENV
+              value: "development"
+            - name: DB_HOST
+              value: "mariadb.akademus.svc.cluster.local"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_NAME
+              value: "akademus_db"
+            - name: DB_USER
+              value: "akademus"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mariadb-secrets
+                  key: mariadb-password
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: akademus-flask-secrets
+                  key: secret-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: akademus-api
+  namespace: akademus
+spec:
+  selector:
+    app: akademus-api
+  ports:
+    - port: 5000
+      targetPort: 5000

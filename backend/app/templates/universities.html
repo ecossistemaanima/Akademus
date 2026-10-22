@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Akademus | Universidades Parceiras</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.85);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --primary: #6366f1;
+      --accent: #06b6d4;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: #f8fafc; margin: 0; padding: 2rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--card-border); padding-bottom: 1rem; }
+    h1 { font-family: 'Outfit'; font-size: 2rem; margin: 0; }
+    .table-container { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th, td { padding: 1rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    th { background: rgba(15, 23, 42, 0.95); font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; }
+    .badge { padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+    .badge-active { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-inactive { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .btn { padding: 6px 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+    .btn-create { background: var(--primary); color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 0.9rem; }
+    .btn-create:hover { background: #4f46e5; }
+    .btn-edit { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); margin-right: 6px; }
+    .btn-delete { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .btn-restore { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    
+    /* Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+    .modal-box { background: #0f172a; border: 1px solid var(--card-border); border-radius: 20px; padding: 2rem; width: 90%; max-width: 520px; }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label { display: block; font-size: 0.825rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.5rem; }
+    .form-input { width: 100%; padding: 0.75rem 1rem; background: rgba(2, 6, 23, 0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; box-sizing: border-box; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>🏫 Gestão de Universidades & Faculdades</h1>
+      <p style="color:#94a3b8; margin-top:4px;">Cadastro, edição e controle de instituições ativas (Exclusão Lógica)</p>
+    </div>
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <button class="btn btn-create" onclick="openCreateModal()">+ Nova Universidade</button>
+      <a href="/users" style="color:#a5b4fc; text-decoration:none; font-size:0.9rem;">👥 Usuários</a>
+      <a href="/" style="color:#38bdf8; text-decoration:none; font-size:0.9rem;">🏠 Dashboard</a>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nome Completo da Instituição</th>
+          <th>Sigla / Nome Curto</th>
+          <th>Status</th>
+          <th style="text-align: right;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in universities %}
+        <tr style="{% if not u.is_active %}opacity: 0.55;{% endif %}">
+          <td><code style="color:#a5b4fc; font-weight:bold; font-size:0.95rem;">{{ u.code }}</code></td>
+          <td><strong>{{ u.name }}</strong></td>
+          <td>{{ u.short_name }}</td>
+          <td>
+            {% if u.is_active %}
+            <span class="badge badge-active">Ativa</span>
+            {% else %}
+            <span class="badge badge-inactive">Inativa (Excluída Lógica)</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <button class="btn btn-edit" onclick="openEditModal({{ u.id }}, '{{ u.code }}', '{{ u.name }}', '{{ u.short_name }}', {{ 'true' if u.is_active else 'false' }})">✏️ Editar</button>
+            {% if u.is_active %}
+            <button class="btn btn-delete" onclick="softDeleteUniversity({{ u.id }}, '{{ u.short_name }}')">🗑️ Desativar</button>
+            {% else %}
+            <button class="btn btn-restore" onclick="restoreUniversity({{ u.id }}, '{{ u.short_name }}')">♻️ Reativar</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal Criar / Editar Universidade -->
+  <div id="uni-modal" class="modal">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <h2 id="modal-title" style="font-family:'Outfit'; font-size:1.5rem;">Nova Universidade</h2>
+        <button onclick="closeModal()" style="background:none; border:none; color:#94a3b8; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <form id="uni-form">
+        <input type="hidden" id="uni-id">
+        <div class="form-group">
+          <label class="form-label">Código Único (Sigla Oficial)</label>
+          <input type="text" id="uni-code" class="form-input" required placeholder="Ex: USJT, UAM, USP">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nome Completo</label>
+          <input type="text" id="uni-name" class="form-input" required placeholder="Ex: Universidade São Judas Tadeu">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nome Curto / Exibição</label>
+          <input type="text" id="uni-short-name" class="form-input" required placeholder="Ex: São Judas">
+        </div>
+        <div class="form-group" id="group-status" style="display:none;">
+          <label class="form-label">Status</label>
+          <select id="uni-status" class="form-input" style="background:#020617;">
+            <option value="true">Ativa</option>
+            <option value="false">Inativa (Exclusão Lógica)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-create" style="width:100%; justify-content:center; margin-top:1rem;">Salvar Universidade</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById('uni-modal');
+    function closeModal() { modal.style.display = 'none'; }
+
+    function openCreateModal() {
+      document.getElementById('modal-title').innerText = 'Nova Universidade';
+      document.getElementById('uni-id').value = '';
+      document.getElementById('uni-code').value = '';
+      document.getElementById('uni-code').disabled = false;
+      document.getElementById('uni-name').value = '';
+      document.getElementById('uni-short-name').value = '';
+      document.getElementById('group-status').style.display = 'none';
+      modal.style.display = 'flex';
+    }
+
+    function openEditModal(id, code, name, short_name, is_active) {
+      document.getElementById('modal-title').innerText = `Editar ${short_name}`;
+      document.getElementById('uni-id').value = id;
+      document.getElementById('uni-code').value = code;
+      document.getElementById('uni-code').disabled = true; // código imutável após criação
+      document.getElementById('uni-name').value = name;
+      document.getElementById('uni-short-name').value = short_name;
+      document.getElementById('uni-status').value = is_active ? 'true' : 'false';
+      document.getElementById('group-status').style.display = 'block';
+      modal.style.display = 'flex';
+    }
+
+    document.getElementById('uni-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('uni-id').value;
+      const isEdit = !!id;
+      const url = isEdit ? `/universities/api/${id}` : '/universities/api';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const payload = {
+        name: document.getElementById('uni-name').value,
+        short_name: document.getElementById('uni-short-name').value
+      };
+      if (!isEdit) payload.code = document.getElementById('uni-code').value;
+      if (isEdit) payload.is_active = document.getElementById('uni-status').value === 'true';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) window.location.reload();
+      else {
+        const err = await res.json();
+        alert(err.error || 'Erro ao salvar universidade.');
+      }
+    };
+
+    async function softDeleteUniversity(id, name) {
+      if (!confirm(`Deseja desativar a instituição "${name}"? Os dados históricos serão preservados.`)) return;
+      const res = await fetch(`/universities/api/${id}`, { method: 'DELETE' });
+      if (res.ok) window.location.reload();
+      else alert('Erro ao desativar universidade.');
+    }
+
+    async function restoreUniversity(id, name) {
+      const res = await fetch(`/universities/api/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: true })
+      });
+      if (res.ok) window.location.reload();
+      else alert('Erro ao reativar universidade.');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: stoat
+
+---
+# PVCs para persistência local
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-data
+  namespace: stoat
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 15Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: autumn-data
+  namespace: stoat
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 30Gi
+
+---
+# 1. MongoDB (com suporte a ReplicaSet para change streams)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stoat-mongo
+  namespace: stoat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stoat-mongo
+  template:
+    metadata:
+      labels:
+        app: stoat-mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:5.0
+          command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mongo-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stoat-mongo
+  namespace: stoat
+spec:
+  selector:
+    app: stoat-mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+
+---
+# 2. Redis
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stoat-redis
+  namespace: stoat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stoat-redis
+  template:
+    metadata:
+      labels:
+        app: stoat-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stoat-redis
+  namespace: stoat
+spec:
+  selector:
+    app: stoat-redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+---
+# 3. MinIO / Silo (Armazenamento de Objetos S3 para arquivos)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stoat-minio
+  namespace: stoat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stoat-minio
+  template:
+    metadata:
+      labels:
+        app: stoat-minio
+    spec:
+      containers:
+        - name: minio
+          image: docker.io/pgsty/silo
+          command: ["silo", "server", "/data"]
+          env:
+            - name: MINIO_ROOT_USER
+              value: "minioautumn"
+            - name: MINIO_ROOT_PASSWORD
+              value: "minioautumn"
+            - name: MINIO_DOMAIN
+              value: "minio"
+          ports:
+            - containerPort: 9000
+          volumeMounts:
+            - name: files
+              mountPath: /data
+      volumes:
+        - name: files
+          hostPath:
+            path: /data/stoat/silo
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: stoat
+spec:
+  selector:
+    app: stoat-minio
+  ports:
+    - name: s3
+      port: 9000
+      targetPort: 9000
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: stoat-create-buckets
+  namespace: stoat
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: docker.io/pgsty/mc
+          command:
+            - /bin/sh
+            - -c
+            - |
+              while ! /usr/bin/mc ready minio; do
+                /usr/bin/mc alias set minio http://minio:9000 minioautumn minioautumn
+                echo 'Waiting for minio...' && sleep 1
+              done
+              /usr/bin/mc mb --ignore-existing minio/revolt-uploads
+              /usr/bin/mc mb --ignore-existing minio/avatars
+              /usr/bin/mc mb --ignore-existing minio/attachments
+              /usr/bin/mc mb --ignore-existing minio/backgrounds
+              /usr/bin/mc mb --ignore-existing minio/icons
+              /usr/bin/mc mb --ignore-existing minio/banners
+              /usr/bin/mc mb --ignore-existing minio/emojis
+              exit 0
+---
+# 4. Autumn (Uploads e Arquivos)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stoat-autumn
+  namespace: stoat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stoat-autumn
+  template:
+    metadata:
+      labels:
+        app: stoat-autumn
+    spec:
+      containers:
+        - name: autumn
+          image: revoltchat/autumn:latest
+          env:
+            - name: AUTUMN_MONGO_URI
+              value: "mongodb://stoat-mongo:27017/autumn"
+          ports:
+            - containerPort: 14704
+          volumeMounts:
+            - name: config
+              mountPath: /home/rust/Revolt.toml
+              subPath: Revolt.toml
+              readOnly: true
+            - name: config
+              mountPath: /Revolt.toml
+              subPath: Revolt.toml
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: delta-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stoat-autumn
+  namespace: stoat
+spec:
+  selector:
+    app: stoat-autumn
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 14704
+---
+# 4. Bonfire (WebSockets)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stoat-bonfire
+  namespace: stoat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stoat-bonfire
+  template:
+    metadata:
+      labels:
+        app: stoat-bonfire
+    spec:
+      containers:
+        - name: bonfire
+          image: revoltchat/bonfire:latest
+          env:
+            - name: REDIS_URL
+              value: "redis://stoat-redis:6379"
+            - name: REDIS_URI
+              value: "redis://stoat-redis:6379"
+            - name: HOST
+              value: "0.0.0.0:9000"
+          ports:
+            - containerPort: 9000
+
+---
+---
+# 5. RabbitMQ
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stoat-rabbitmq
+  namespace: stoat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stoat-rabbitmq
+  template:
+    metadata:
+      labels:
+        app: stoat-rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-alpine
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: "rabbituser"
+            - name: RABBITMQ_DEFAULT_PASS
+              value: "rabbitpass"
+          ports:
+            - containerPort: 5672
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stoat-rabbitmq
+  namespace: stoat
+spec:
+  selector:
+    app: stoat-rabbitmq
+  ports:
+    - port: 5672
+      targetPort: 5672
+
+---
+# 6. ConfigMap com as configurações do Delta
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: delta-config
+  namespace: stoat
+data:
+  Revolt.toml: |
+    [database]
+    mongodb = "mongodb://database:27017/revolt?replicaSet=rs0&directConnection=true"
+    redis = "redis://stoat-redis:6379"
+
+    [rabbit]
+    host = "stoat-rabbitmq"
+    username = "rabbituser"
+    password = "rabbitpass"
+
+    [hosts]
+    app = "https://stoat.tux.me.uk"
+    api = "https://stoat.tux.me.uk/api"
+    events = "wss://stoat.tux.me.uk/ws"
+    autumn = "https://stoat.tux.me.uk/autumn"
+    january = "https://stoat.tux.me.uk/january"
+
+    [security]
+    secret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    invite_only = true
+
+    [api.registration]
+    invite_only = true
+
+    [files]
+    encryption_key = "RfTWOJfUGwv5IpzK4qvHw37Fzrc82UUYbIiA9ZzCo2U="
+
+    [files.s3]
+    endpoint = "http://minio:9000"
+    path_style_buckets = true
+    region = "minio"
+    access_key_id = "minioautumn"
+    secret_access_key = "minioautumn"
+    default_bucket = "revolt-uploads"
+
+---
+# Deployment do Delta montando o ConfigMap
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stoat-delta
+  namespace: stoat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stoat-delta
+  template:
+    metadata:
+      labels:
+        app: stoat-delta
+    spec:
+      containers:
+        - name: delta
+          image: revoltchat/server:latest
+          ports:
+            - containerPort: 14702
+          volumeMounts:
+            - name: config
+              mountPath: /home/rust/Revolt.toml
+              subPath: Revolt.toml
+              readOnly: true
+            - name: config
+              mountPath: /Revolt.toml
+              subPath: Revolt.toml
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: delta-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stoat-delta
+  namespace: stoat
+spec:
+  selector:
+    app: stoat-delta
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 14702

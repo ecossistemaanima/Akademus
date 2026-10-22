@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: akademus-ingress
+  namespace: akademus
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: akademus.tux.me.uk
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: akademus-api
+                port:
+                  number: 5000

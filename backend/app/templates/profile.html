@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Akademus | Meu Perfil</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.85);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --primary: #6366f1;
+      --accent: #06b6d4;
+      --success: #10b981;
+    }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: #f8fafc; margin: 0; padding: 2rem; display: flex; justify-content: center; }
+    .profile-card { width: 100%; max-width: 720px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 2.5rem; backdrop-filter: blur(16px); box-shadow: 0 15px 40px rgba(0,0,0,0.5); }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 1.5rem; margin-bottom: 2rem; }
+    h1 { font-family: 'Outfit'; font-size: 1.85rem; margin: 0; }
+    .avatar-section { display: flex; align-items: center; gap: 20px; margin-bottom: 2rem; background: rgba(15,23,42,0.6); padding: 1.25rem; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); }
+    .avatar-img { width: 72px; height: 72px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label { display: block; font-size: 0.825rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.5rem; }
+    .form-input { width: 100%; padding: 0.8rem 1rem; background: #020617; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; box-sizing: border-box; }
+    .form-input:disabled { background: rgba(15,23,42,0.5); color: #64748b; cursor: not-allowed; }
+    .btn-save { background: var(--primary); color: #fff; padding: 0.9rem 1.5rem; border-radius: 10px; font-weight: 600; border: none; cursor: pointer; width: 100%; font-size: 0.95rem; margin-top: 1rem; }
+    .btn-save:hover { background: #4f46e5; }
+    .privacy-box { background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 12px; padding: 1.25rem; margin-top: 1.5rem; margin-bottom: 1rem; }
+    .privacy-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .privacy-toggle input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="profile-card">
+    <div class="header">
+      <div>
+        <h1>👤 Meu Perfil Acadêmico</h1>
+        <p style="color:#94a3b8; font-size:0.875rem; margin-top:4px;">Atualize sua bio, links de certificações (Credly), redes e visibilidade</p>
+      </div>
+      <div>
+        <a href="/" style="color:#38bdf8; text-decoration:none; font-weight:600; font-size:0.9rem;">🏠 Voltar ao Início</a>
+      </div>
+    </div>
+
+    {% if success %}
+    <div style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #6ee7b7; padding: 12px; border-radius: 10px; font-size: 0.9rem; margin-bottom: 1.5rem;">
+      {{ success }}
+    </div>
+    {% endif %}
+
+    <div class="avatar-section">
+      <img src="{{ user.google_picture or 'https://ui-avatars.com/api/?name=' + user.name + '&background=6366f1&color=fff' }}" class="avatar-img" id="avatar-preview" alt="Avatar">
+      <div>
+        <div style="font-weight:700; font-size:1.1rem;">{{ user.name }}</div>
+        <div style="font-size:0.85rem; color:#94a3b8;">{{ user.email }}</div>
+        <div style="margin-top:6px;">
+          {% for r in user.roles %}
+          <span style="background:#1e293b; color:#93c5fd; padding:3px 8px; border-radius:6px; font-size:0.75rem; font-weight:600;">{{ r.name }}</span>
+          {% endfor %}
+          {% if user.ra %}
+          <span style="background:#334155; color:#cbd5e1; padding:3px 8px; border-radius:6px; font-size:0.75rem; font-weight:600; margin-left:4px;">RA: {{ user.ra }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <form action="/profile" method="POST">
+      <div class="form-group">
+        <label class="form-label">Nome Completo</label>
+        <input type="text" name="name" class="form-input" value="{{ user.name }}" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">E-mail Principal (Imutável)</label>
+        <input type="email" class="form-input" value="{{ user.email }}" disabled>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">URL do Avatar / Foto de Perfil</label>
+        <input type="url" name="google_picture" id="input-avatar" class="form-input" value="{{ user.google_picture or '' }}" placeholder="https://exemplo.com/minha-foto.jpg">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Biografia / Apresentação Acadêmica</label>
+        <textarea name="bio" class="form-input" rows="3" placeholder="Fale um pouco sobre seus interesses acadêmicos e projetos...">{{ user.bio or '' }}</textarea>
+      </div>
+
+      <h3 style="font-family:'Outfit'; font-size:1.2rem; margin:1.75rem 0 1rem; color:#a5b4fc;">Certificações & Redes Profissionais</h3>
+
+      <div class="form-group">
+        <label class="form-label">🏅 URL do Credly (Badges Digitais)</label>
+        <input type="url" name="credly_url" class="form-input" value="{{ user.credly_url or '' }}" placeholder="https://www.credly.com/users/seu-usuario/badges">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">💼 URL do LinkedIn</label>
+        <input type="url" name="linkedin_url" class="form-input" value="{{ user.linkedin_url or '' }}" placeholder="https://www.linkedin.com/in/seu-perfil">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">☁️ Google Skills Boost URL (Public Profile)</label>
+        <input type="url" name="google_skills_boost_url" class="form-input" value="{{ user.google_skills_boost_url or '' }}" placeholder="https://www.cloudskillsboost.google/public_profiles/seu-id">
+      </div>
+
+      <!-- Privacidade das Redes -->
+      <div class="privacy-box">
+        <label class="privacy-toggle">
+          <input type="checkbox" name="is_profile_public" value="true" {% if user.is_profile_public %}checked{% endif %}>
+          <div>
+            <div style="font-weight:600; font-size:0.9rem; color:#f8fafc;">Tornar meus links de certificações públicos para outros alunos</div>
+            <div style="font-size:0.775rem; color:#94a3b8; margin-top:2px;">
+              Se desmarcado, apenas <strong>Professores</strong> e <strong>Administradores</strong> poderão ver suas credenciais do Credly, LinkedIn e Google Skills Boost.
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <button type="submit" class="btn-save">Salvar Alterações do Perfil</button>
+    </form>
+  </div>
+
+  <script>
+    const avatarInput = document.getElementById('input-avatar');
+    const avatarPreview = document.getElementById('avatar-preview');
+    avatarInput.addEventListener('input', () => {
+      if (avatarInput.value.trim()) avatarPreview.src = avatarInput.value.trim();
+    });
+  </script>
+</body>
+</html>

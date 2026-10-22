@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Akademus | Gestão e Moderação de Usuários</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.85);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --primary: #6366f1;
+      --accent: #06b6d4;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: #f8fafc; margin: 0; padding: 2rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--card-border); padding-bottom: 1rem; }
+    h1 { font-family: 'Outfit'; font-size: 2rem; margin: 0; }
+    .table-container { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th, td { padding: 1rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    th { background: rgba(15, 23, 42, 0.95); font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; }
+    .badge { padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+    .badge-PENDING { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-APPROVED { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-REJECTED { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .badge-inactive { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.4); }
+    .btn { padding: 6px 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; }
+    .btn-create { background: var(--primary); color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 0.9rem; }
+    .btn-create:hover { background: #4f46e5; }
+    .btn-approve { background: #10b981; color: #fff; margin-right: 4px; }
+    .btn-reject { background: #ef4444; color: #fff; margin-right: 4px; }
+    .btn-edit { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); margin-right: 4px; }
+    .btn-delete { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .btn-restore { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    /* Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+    .modal-box { background: #0f172a; border: 1px solid var(--card-border); border-radius: 20px; padding: 2rem; width: 90%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label { display: block; font-size: 0.825rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.5rem; }
+    .form-input { width: 100%; padding: 0.75rem 1rem; background: rgba(2, 6, 23, 0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; box-sizing: border-box; }
+    .unis-checkboxes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 140px; overflow-y: auto; background: rgba(2,6,23,0.5); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); }
+    .unis-checkboxes label { font-size: 0.8rem; color: #cbd5e1; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>👥 Gestão e Moderação de Usuários</h1>
+      <p style="color:#94a3b8; margin-top:4px;">Criação de contas, edição de papéis, RA, vínculo com instituições e moderação</p>
+    </div>
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <button class="btn btn-create" onclick="openCreateUserModal()">+ Novo Usuário</button>
+      <a href="/universities" style="color:#a5b4fc; text-decoration:none; font-size:0.9rem;">🏫 Universidades</a>
+      <a href="/" style="color:#38bdf8; text-decoration:none; font-size:0.9rem;">🏠 Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Barra de Filtros por Status -->
+  <div style="display:flex; gap:10px; margin-bottom:1.5rem; align-items:center;">
+    <span style="font-size:0.85rem; color:#94a3b8; font-weight:600; margin-right:4px;">Filtrar por Status:</span>
+    <a href="/users" style="text-decoration:none; padding:6px 14px; border-radius:8px; font-size:0.85rem; font-weight:600; {% if current_status == 'ALL' %}background:#6366f1; color:#fff;{% else %}background:rgba(15,23,42,0.8); color:#94a3b8; border:1px solid rgba(255,255,255,0.08);{% endif %}">
+      Todos ({{ counts.ALL }})
+    </a>
+    <a href="/users?status=PENDING" style="text-decoration:none; padding:6px 14px; border-radius:8px; font-size:0.85rem; font-weight:600; display:flex; align-items:center; gap:6px; {% if current_status == 'PENDING' %}background:#f59e0b; color:#fff;{% else %}background:rgba(15,23,42,0.8); color:#fbbf24; border:1px solid rgba(245,158,11,0.3);{% endif %}">
+      ⏳ Somente Pendentes ({{ counts.PENDING }})
+    </a>
+    <a href="/users?status=APPROVED" style="text-decoration:none; padding:6px 14px; border-radius:8px; font-size:0.85rem; font-weight:600; {% if current_status == 'APPROVED' %}background:#10b981; color:#fff;{% else %}background:rgba(15,23,42,0.8); color:#34d399; border:1px solid rgba(16,185,129,0.3);{% endif %}">
+      ✅ Aprovados ({{ counts.APPROVED }})
+    </a>
+    <a href="/users?status=REJECTED" style="text-decoration:none; padding:6px 14px; border-radius:8px; font-size:0.85rem; font-weight:600; {% if current_status == 'REJECTED' %}background:#ef4444; color:#fff;{% else %}background:rgba(15,23,42,0.8); color:#f87171; border:1px solid rgba(239,68,68,0.3);{% endif %}">
+      ❌ Rejeitados ({{ counts.REJECTED }})
+    </a>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Papel</th>
+          <th>RA</th>
+          <th>Universidades</th>
+          <th>Status</th>
+          <th style="text-align: right;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr style="{% if not u.is_active %}opacity: 0.5;{% endif %}">
+          <td>
+            <strong>{{ u.name }}</strong>
+            {% if not u.is_active %}
+            <br><span class="badge badge-inactive">Desativado</span>
+            {% endif %}
+          </td>
+          <td>{{ u.email }}</td>
+          <td>
+            {% for r in u.roles %}
+            <span class="badge" style="background:#1e293b; color:#93c5fd;">{{ r.name }}</span>
+            {% endfor %}
+          </td>
+          <td>{{ u.ra or '-' }}</td>
+          <td>
+            {% if u.universities|length == 18 %}
+            <span class="badge" style="background:#312e81; color:#c7d2fe;">Todas as 18 da Ânima</span>
+            {% else %}
+              {% for uni in u.universities %}
+              <span class="badge" style="background:#1e293b; color:#cbd5e1;">{{ uni.short_name }}</span>
+              {% endfor %}
+            {% endif %}
+          </td>
+          <td><span class="badge badge-{{ u.status }}">{{ u.status }}</span></td>
+          <td style="text-align: right;">
+            {% if u.status == 'PENDING' %}
+            <button class="btn btn-approve" onclick="updateStatus({{ u.id }}, 'APPROVED')">Aprovar</button>
+            <button class="btn btn-reject" onclick="updateStatus({{ u.id }}, 'REJECTED')">Rejeitar</button>
+            {% endif %}
+            
+            <button class="btn btn-edit" onclick="openEditUserModal({{ u.id }}, '{{ u.name }}', '{{ u.email }}', '{{ u.ra or '' }}', '{{ u.roles[0].name if u.roles else 'ALUNO' }}', '{{ u.status }}', {{ 'true' if u.is_active else 'false' }}, [{% for uni in u.universities %}{{ uni.id }},{% endfor %}])">✏️ Editar</button>
+            
+            {% if u.is_active %}
+            <button class="btn btn-delete" onclick="softDeleteUser({{ u.id }}, '{{ u.name }}')">🗑️ Desativar</button>
+            {% else %}
+            <button class="btn btn-restore" onclick="restoreUser({{ u.id }}, '{{ u.name }}')">♻️ Reativar</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal Criar / Editar Usuário -->
+  <div id="user-modal" class="modal">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <h2 id="modal-user-title" style="font-family:'Outfit'; font-size:1.5rem;">Novo Usuário</h2>
+        <button onclick="closeUserModal()" style="background:none; border:none; color:#94a3b8; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <form id="user-form">
+        <input type="hidden" id="user-id">
+        <div class="form-group">
+          <label class="form-label">Nome Completo</label>
+          <input type="text" id="user-name" class="form-input" required placeholder="Nome do usuário">
+        </div>
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input type="email" id="user-email" class="form-input" required placeholder="email@exemplo.com">
+        </div>
+        <div class="form-group" id="group-password">
+          <label class="form-label">Senha Inicial</label>
+          <input type="password" id="user-password" class="form-input" placeholder="Senha do usuário">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Papel de Acesso (Role)</label>
+          <select id="user-role" class="form-input" style="background:#020617;" onchange="handleRoleChange()">
+            <option value="ALUNO">Aluno (Estudante)</option>
+            <option value="PROFESSOR">Professor (Docente)</option>
+            <option value="ADMINISTRADOR">Administrador</option>
+            <option value="PARCEIRO">Parceiro</option>
+          </select>
+        </div>
+        <div class="form-group" id="group-ra">
+          <label class="form-label">Registro de Aluno (RA) <span style="color:#ef4444;">*</span></label>
+          <input type="text" id="user-ra" class="form-input" placeholder="Ex: 82012345">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status da Conta</label>
+          <select id="user-status-select" class="form-input" style="background:#020617;">
+            <option value="APPROVED">APPROVED (Aprovado / Ativo)</option>
+            <option value="PENDING">PENDING (Aguardando Aprovação)</option>
+            <option value="REJECTED">REJECTED (Rejeitado)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Vínculo com Instituições (Universidades)</label>
+          <div class="unis-checkboxes">
+            {% for uni in universities %}
+            <label>
+              <input type="checkbox" name="unis" value="{{ uni.id }}" class="uni-chk">
+              {{ uni.short_name }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-create" style="width:100%; justify-content:center; margin-top:1rem;">Salvar Usuário</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const userModal = document.getElementById('user-modal');
+    function closeUserModal() { userModal.style.display = 'none'; }
+
+    function handleRoleChange() {
+      const role = document.getElementById('user-role').value;
+      const groupRa = document.getElementById('group-ra');
+      const inputRa = document.getElementById('user-ra');
+      if (role === 'ALUNO') {
+        groupRa.style.display = 'block';
+        inputRa.required = true;
+      } else {
+        groupRa.style.display = 'none';
+        inputRa.required = false;
+        inputRa.value = '';
+      }
+    }
+
+    function openCreateUserModal() {
+      document.getElementById('modal-user-title').innerText = 'Novo Usuário';
+      document.getElementById('user-id').value = '';
+      document.getElementById('user-name').value = '';
+      document.getElementById('user-email').value = '';
+      document.getElementById('user-password').value = '';
+      document.getElementById('group-password').style.display = 'block';
+      document.getElementById('user-role').value = 'ALUNO';
+      document.getElementById('user-status-select').value = 'APPROVED';
+      document.querySelectorAll('.uni-chk').forEach(c => c.checked = false);
+      handleRoleChange();
+      userModal.style.display = 'flex';
+    }
+
+    function openEditUserModal(id, name, email, ra, role, status, is_active, userUniIds) {
+      document.getElementById('modal-user-title').innerText = `Editar Usuário: ${name}`;
+      document.getElementById('user-id').value = id;
+      document.getElementById('user-name').value = name;
+      document.getElementById('user-email').value = email;
+      document.getElementById('group-password').style.display = 'none'; // não altera senha por aqui
+      document.getElementById('user-role').value = role;
+      document.getElementById('user-ra').value = ra;
+      document.getElementById('user-status-select').value = status;
+
+      document.querySelectorAll('.uni-chk').forEach(c => {
+        c.checked = userUniIds.includes(parseInt(c.value));
+      });
+
+      handleRoleChange();
+      userModal.style.display = 'flex';
+    }
+
+    document.getElementById('user-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('user-id').value;
+      const isEdit = !!id;
+      const url = isEdit ? `/users/api/${id}` : '/users/api';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const selectedUnis = Array.from(document.querySelectorAll('.uni-chk:checked')).map(c => parseInt(c.value));
+
+      const payload = {
+        name: document.getElementById('user-name').value,
+        email: document.getElementById('user-email').value,
+        role_type: document.getElementById('user-role').value,
+        ra: document.getElementById('user-ra').value,
+        status: document.getElementById('user-status-select').value,
+        university_ids: selectedUnis
+      };
+
+      if (!isEdit) {
+        payload.password = document.getElementById('user-password').value || 'Akademus@2026!';
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) window.location.reload();
+      else {
+        const err = await res.json();
+        alert(err.error || 'Erro ao salvar usuário.');
+      }
+    };
+
+    async function updateStatus(userId, status) {
+      const res = await fetch(`/users/api/${userId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) window.location.reload();
+      else alert('Erro ao atualizar status.');
+    }
+
+    async function softDeleteUser(userId, name) {
+      if (!confirm(`Deseja desativar o usuário "${name}"? Os registros históricos serão preservados.`)) return;
+      const res = await fetch(`/users/api/${userId}`, { method: 'DELETE' });
+      if (res.ok) window.location.reload();
+      else alert('Erro ao desativar usuário.');
+    }
+
+    async function restoreUser(userId, name) {
+      const res = await fetch(`/users/api/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: true })
+      });
+      if (res.ok) window.location.reload();
+      else alert('Erro ao reativar usuário.');
+    }
+  </script>
+</body>
+</html>

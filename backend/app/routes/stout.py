@@ -48,6 +48,21 @@ def stout_client_proxy(path):
     return proxy_request(target)
 
 
+# Suporte transparente para preloads do Vite que buscam na raiz /assets ou /manifest.webmanifest
+@stout_bp.route("/assets/<path:path>", methods=["GET", "HEAD"])
+def stout_root_assets_proxy(path):
+    target = f"{STOAT_CLIENT_URL}/assets/{path}"
+    if request.query_string:
+        target += f"?{request.query_string.decode('utf-8')}"
+    return proxy_request(target)
+
+
+@stout_bp.route("/manifest.webmanifest", methods=["GET", "HEAD"])
+def stout_root_manifest_proxy():
+    return proxy_request(f"{STOAT_CLIENT_URL}/manifest.webmanifest")
+
+
+
 # 2. Rota da API Delta: /chat-api e /chat-api/<path>
 @stout_bp.route("/chat-api", defaults={"path": ""}, methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
 @stout_bp.route("/chat-api/", defaults={"path": ""}, methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])

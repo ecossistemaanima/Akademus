@@ -268,7 +268,18 @@ spec:
             - containerPort: 9000
 
 ---
----
+apiVersion: v1
+kind: Service
+metadata:
+  name: stoat-bonfire
+  namespace: stoat
+spec:
+  selector:
+    app: stoat-bonfire
+  ports:
+    - name: ws
+      port: 9000
+      targetPort: 9000
 # 5. RabbitMQ
 apiVersion: apps/v1
 kind: Deployment
@@ -327,18 +338,18 @@ data:
     password = "rabbitpass"
 
     [hosts]
-    app = "https://stoat.tux.me.uk"
-    api = "https://stoat.tux.me.uk/api"
-    events = "wss://stoat.tux.me.uk/ws"
-    autumn = "https://stoat.tux.me.uk/autumn"
-    january = "https://stoat.tux.me.uk/january"
+    app = "https://akademus.tux.me.uk/chat"
+    api = "https://akademus.tux.me.uk/chat-api"
+    events = "wss://akademus.tux.me.uk/chat-ws"
+    autumn = "https://akademus.tux.me.uk/autumn"
+    january = "https://akademus.tux.me.uk/january"
 
     [security]
     secret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-    invite_only = true
+    invite_only = false
 
     [api.registration]
-    invite_only = true
+    invite_only = false
 
     [files]
     encryption_key = "RfTWOJfUGwv5IpzK4qvHw37Fzrc82UUYbIiA9ZzCo2U="
@@ -399,3 +410,40 @@ spec:
     - name: http
       port: 5000
       targetPort: 14702
+---
+# 5. Stoat Web Client
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stoat-client
+  namespace: stoat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stoat-client
+  template:
+    metadata:
+      labels:
+        app: stoat-client
+    spec:
+      containers:
+        - name: client
+          image: akademus/stoat-client:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stoat-client
+  namespace: stoat
+spec:
+  selector:
+    app: stoat-client
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+

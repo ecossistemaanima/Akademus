@@ -40,6 +40,7 @@ def create_app(test_config=None):
     from app.routes.users import users_bp
     from app.routes.partners import partners_bp
     from app.routes.badges import badges_bp
+    from app.routes.stout import stout_bp
 
     configure_oauth(app)
     app.register_blueprint(auth_bp)
@@ -47,6 +48,7 @@ def create_app(test_config=None):
     app.register_blueprint(users_bp)
     app.register_blueprint(partners_bp)
     app.register_blueprint(badges_bp)
+    app.register_blueprint(stout_bp)
 
     # Redirecionamento amigável para Meu Perfil
     @app.route("/profile", methods=["GET", "POST"])

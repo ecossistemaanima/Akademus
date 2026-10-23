@@ -86,3 +86,34 @@ def stout_autumn_proxy(path):
     if request.query_string:
         target += f"?{request.query_string.decode('utf-8')}"
     return proxy_request(target)
+
+
+# 4. Endpoint SSO para autenticação direta sem tela de login
+@stout_bp.route("/api/chat/sso-session", methods=["GET"])
+def stout_sso_session():
+    user = session.get("user")
+    if not user:
+        return {"error": "Not authenticated in Akademus"}, 401
+
+    email = user.get("email")
+    if not email:
+        return {"error": "No email in session"}, 400
+
+    # Tenta obter ou criar sessão no Stout Delta
+    try:
+        resp = requests.post(
+            f"{STOAT_DELTA_URL}/auth/session/login",
+            json={
+                "email": email,
+                "password": "Admin@Akademus2026!",
+                "friendly_name": "Akademus SSO Web"
+            },
+            timeout=5
+        )
+        if resp.status_code == 200:
+            return resp.json(), 200
+    except Exception as e:
+        pass
+
+    return {"error": "Could not create Stout session"}, 500
+

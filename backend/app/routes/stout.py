@@ -29,8 +29,11 @@ def proxy_request(target_url: str):
             timeout=15
         )
 
-        excluded_headers = ["content-encoding", "content-length", "transfer-encoding", "connection"]
+        excluded_headers = ["content-encoding", "content-length", "transfer-encoding", "connection", "cache-control"]
         headers = [(name, value) for (name, value) in resp.raw.headers.items() if name.lower() not in excluded_headers]
+        headers.append(("Cache-Control", "no-cache, no-store, must-revalidate"))
+        headers.append(("Pragma", "no-cache"))
+        headers.append(("Expires", "0"))
 
         return Response(resp.iter_content(chunk_size=1024), resp.status_code, headers)
     except Exception as e:
